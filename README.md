@@ -24,6 +24,14 @@ python3 audio.py --dir rtp-channel
 ./build.sh rtp-channel               # → rtp-channel/out/rtp-channel.mp4
 ```
 
+The 9:16 Stories cut uses the same timeline, with `--format story` (outputs go to `out-story/`):
+
+```sh
+node render.mjs full --dir rtp-channel --format story
+python3 audio.py --dir rtp-channel --out out-story
+./build.sh rtp-channel out-story     # → rtp-channel/out-story/rtp-channel-story.mp4
+```
+
 Without a song, `audio.py` writes only the UI sounds, and everything runs on an exact 120 BPM grid. `track.json` (`{"title", "artist", "duration"}`) sets the credit shown in the island and the player.
 
 Needs Node 22 with Playwright's Chromium, Python 3 with numpy (Pillow for the diagnostic plot), and ffmpeg. `python3 beats.py --selftest` checks the beat tracker on a synthetic drum loop.

@@ -75,6 +75,9 @@
   #gToast .ok { width: 36px; height: 36px; border-radius: 18px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; }
 
   #touch { position: absolute; left: 0; top: 0; width: 64px; height: 64px; border-radius: 32px; background: rgba(255,255,255,0.26); border: 2px solid rgba(255,255,255,0.7); visibility: hidden; }
+  #headline { position: absolute; left: 0; top: 300px; width: 1080px; text-align: center; display: none; }
+  #headline .k { color: var(--link); font-size: 30px; line-height: 36px; font-weight: 600; }
+  #headline .h { color: #fff; font-size: 66px; line-height: 74px; font-weight: 800; letter-spacing: -0.025em; margin-top: 14px; }
   #footer { position: absolute; left: 0; bottom: 28px; width: 1080px; text-align: center; color: rgba(255,255,255,0.58); font-size: 30px; line-height: 36px; font-weight: 500; letter-spacing: 0.01em; }
 </style>
 </head>
@@ -149,13 +152,19 @@
     <div id="hint" class="a grp">Tocca il pulsante qui sotto</div>
   </div>
   <div id="touch"></div>
+  <div id="headline"><div class="k">RTP <span class="emo">🇮🇹</span> · Canale Telegram</div><div class="h">I momenti più epici<br>delle slot</div></div>
   <div id="footer">18+ · Gioca responsabilmente</div>
 </div>
 
 <script>
 'use strict';
 // ─── Timing ─────────────────────────────────────────────────────────────────
-const SIZE = 1080, HALF = SIZE / 2;
+// ?format=story (or __FORMAT__ from the renderer) gives the 9:16 Stories cut: same timeline, taller frame,
+// a headline in the top safe area, the shape a little bigger, and the 18+ line kept clear of the Stories UI.
+const FORMAT = window.__FORMAT__ || new URLSearchParams(location.search).get('format') || 'square';
+const STORY = FORMAT === 'story';
+const W = 1080, H = STORY ? 1920 : 1080, SIZE = W;
+const HX = W / 2, HY = STORY ? 1010 : H / 2, ZK = STORY ? 1.14 : 1;
 const GRID = window.__GRID__ || {};
 const BPM = GRID.bpm || 120;
 const BEAT = 60 / BPM;
@@ -230,7 +239,13 @@ const STATES = [[27, 'avatar'], [2, 'header'], [4, 'bub'], [6, 'bubR'], [8, 'slo
 const shapeT = track(STATES.map(([n, k]) => [n, [G[k].x, G[k].y, G[k].w, G[k].h, G[k].r]]));
 const colorT = track(STATES.filter(([, k], i, a) => i === 0 || G[k].c !== G[a[i - 1][1]].c).map(([n, k]) => [n, G[k].c]), SP.color);
 const camT = track(STATES.map(([n, k]) => [n, [G[k].x, G[k].y + (k === 'button' ? 22 : 0)]]), SP.camPos);
-const zoomT = track(STATES.map(([n, k]) => [n, Math.log(G[k].z)]), SP.camZoom);
+// never wider than 84% of the frame (matters in the Stories cut, where everything is scaled up)
+const zOf = k => Math.min(G[k].z * ZK, 0.84 * W / G[k].w) / ZK;
+// when the next state is wider, the camera starts pulling back a little before the shape grows
+const zoomT = track(STATES.map(([n, k], i) => {
+  const prev = STATES[(i - 1 + STATES.length) % STATES.length][1];
+  return [zOf(k) < zOf(prev) ? n - 0.35 : n, Math.log(zOf(k))];
+}), { r: 0.5, d: 1 });
 const punch = [impulse(12, 0.06), impulse(19, 0.07)];
 
 // ─── Timeline (beats) ───────────────────────────────────────────────────────
@@ -355,8 +370,8 @@ function seek(tIn) {
 
   // camera (with a small punch on BONUS and MEGA)
   const [camX, camY] = camT.at(t);
-  const z = Math.exp(zoomT.at(t) + punch.reduce((s, p) => s + p.at(t), 0));
-  el.world.style.transform = `matrix(${z.toFixed(5)},0,0,${z.toFixed(5)},${(HALF - z * camX).toFixed(3)},${(HALF - z * camY).toFixed(3)})`;
+  const z = ZK * Math.exp(zoomT.at(t) + punch.reduce((s, p) => s + p.at(t), 0));
+  el.world.style.transform = `matrix(${z.toFixed(5)},0,0,${z.toFixed(5)},${(HX - z * camX).toFixed(3)},${(HY - z * camY).toFixed(3)})`;
 
   // the shape
   let [x, y, w, h, r] = shapeT.at(t);
@@ -384,7 +399,7 @@ function seek(tIn) {
   }
 
   // header
-  if (fx(el.gHead, V.head.at(t))) { put(el.gHead, -134, -34); el.headSub.textContent = typed('Slot, bonus e momenti epici', t, 3, 0.36); }
+  if (fx(el.gHead, V.head.at(t))) { put(el.gHead, -134, -34); el.headSub.textContent = typed('10.586 iscritti', t, 3, 0.3); }
 
   // bubble 1: typing dots, message, reactions
   if (fx(el.gBub1, V.bub1.at(t))) {
@@ -490,7 +505,7 @@ function seek(tIn) {
   // touch indicator (screen space)
   const tv = V.touch.at(t), tap = TAPS.find(([a, b]) => { const n = t / BEAT; return n >= a - 0.2 && n <= b + 0.3; });
   if (tv > 0.002 && tap) {
-    const sx = HALF + z * (tap[2] - camX), sy = HALF + z * (tap[3] - camY);
+    const sx = HX + z * (tap[2] - camX), sy = HY + z * (tap[3] - camY);
     el.touch.style.visibility = 'visible';
     el.touch.style.opacity = clamp(tv).toFixed(3);
     el.touch.style.transform = `translate(${(sx - 32).toFixed(2)}px,${(sy - 32).toFixed(2)}px) scale(${pressT.at(t).toFixed(4)})`;
@@ -498,14 +513,20 @@ function seek(tIn) {
 }
 
 // ─── Boot ──────────────────────────────────────────────────────────────────
-window.MORPH = { seek, T, BEAT, BPM, NB, SFX, SIZE };
+window.MORPH = { seek, T, BEAT, BPM, NB, SFX, SIZE, W, H, FORMAT };
+if (STORY) {
+  document.getElementById('frame').style.height = `${H}px`;
+  document.getElementById('headline').style.display = 'block';
+  document.getElementById('footer').style.bottom = '390px';
+  el.hint.textContent = 'Scorri in alto ↑';
+}
 window.seek = seek;
 document.fonts.ready.then(() => {
   seek(0);
   window.__ready = true;
   if (window.__RENDER__) return;
   const frame = document.getElementById('frame');
-  const fit = () => { frame.style.transform = `scale(${Math.min(innerWidth, innerHeight) / SIZE})`; };
+  const fit = () => { frame.style.transform = `scale(${Math.min(innerWidth / W, innerHeight / H)})`; };
   fit(); addEventListener('resize', fit);
   const q = new URLSearchParams(location.search);
   if (q.has('t')) { seek(parseFloat(q.get('t'))); return; }

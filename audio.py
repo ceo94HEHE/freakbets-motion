@@ -156,10 +156,11 @@ def main():
     ap.add_argument("--song", type=Path)
     ap.add_argument("--sfx-gain", type=float, default=1.0)
     ap.add_argument("--dir", default=".")
+    ap.add_argument("--out", default="out", help="output folder inside the piece (e.g. out-story)")
     args = ap.parse_args()
     global HERE, OUT
     HERE = ROOT / args.dir
-    OUT = HERE / "out"
+    OUT = HERE / args.out
 
     tl = json.loads((OUT / "timeline.json").read_text())
     n = int(round(tl["frames"] / tl["fps"] * SR))

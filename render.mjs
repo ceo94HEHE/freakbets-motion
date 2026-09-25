@@ -5,7 +5,7 @@
 //   node render.mjs full [--workers 4] 4 subframes per 60 fps frame → out/sub/00000.png …
 //
 // --dir rtp-channel renders another piece (default: the UI morph at the repo root). The page sets
-// its own frame size (MORPH.SIZE). Reads beats.json (measured tempo) and track.json (title, artist,
+// its own frame size (MORPH.W × MORPH.H). --format story passes __FORMAT__ to the page and writes to out-story/. Reads beats.json (measured tempo) and track.json (title, artist,
 // duration) from the piece's folder, and writes out/timeline.json (loop + UI sound cues) for audio.py.
 import http from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
@@ -22,11 +22,14 @@ const flag = (name, def) => {
 };
 const DIR = flag('dir', '.');
 const PIECE = path.join(HERE, DIR);
-const OUT = path.join(PIECE, 'out');
+const FORMAT = flag('format', '');
+const OUT = path.join(PIECE, FORMAT ? `out-${FORMAT}` : 'out');
+const OUT_WEB = FORMAT ? `out-${FORMAT}` : 'out';
 const WEB = DIR === '.' ? '' : `${DIR.replace(/\/+$/, '')}/`;   // piece path as served
 const FPS = 60;
 const SUB = 4;
-let SIZE = 1440;
+let W = 1440;
+let H = 1440;
 
 async function loadPlaywright() {
   try {
@@ -66,25 +69,26 @@ async function pageConfig() {
   const cfg = {};
   if (beats?.bpm) cfg.__GRID__ = { bpm: beats.bpm };
   if (track) cfg.__TRACK__ = track;
+  if (FORMAT) cfg.__FORMAT__ = FORMAT;
   return cfg;
 }
 
 async function openPage(browser, url, cfg) {
-  const page = await browser.newPage({ viewport: { width: SIZE, height: SIZE }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   await page.addInitScript((c) => {
     window.__RENDER__ = true;
     Object.assign(window, c);
   }, cfg);
   await page.goto(url);
   await page.waitForFunction(() => window.__ready === true);
-  SIZE = await page.evaluate(() => window.MORPH.SIZE || 1440);
-  await page.setViewportSize({ width: SIZE, height: SIZE });
+  [W, H] = await page.evaluate(() => [window.MORPH.W || window.MORPH.SIZE || 1440, window.MORPH.H || window.MORPH.SIZE || 1440]);
+  await page.setViewportSize({ width: W, height: H });
   return page;
 }
 
 async function shoot(page, t, file) {
   await page.evaluate((tt) => window.seek(tt), t);
-  await page.screenshot({ path: file, type: 'png', clip: { x: 0, y: 0, width: SIZE, height: SIZE } });
+  await page.screenshot({ path: file, type: 'png', clip: { x: 0, y: 0, width: W, height: H } });
 }
 
 const barBeat = (n) => `${Math.floor(n / 4) + 1}.${(Math.floor(n) % 4) + 1}${n % 1 ? `+${(n % 1).toFixed(2).slice(1)}` : ''}`;
@@ -98,7 +102,7 @@ async function contactSheet(browser, base, frames, file, title) {
     body{margin:0;background:#fff;font-family:Geist,sans-serif;color:#111}
     h1{font-size:22px;font-weight:600;margin:24px 24px 0}
     main{display:grid;grid-template-columns:repeat(7,300px);gap:14px;padding:18px 24px 24px}
-    figure{margin:0} img{display:block;width:300px;height:300px;border-radius:6px}
+    figure{margin:0} img{display:block;width:300px;height:${Math.round(300 * H / W)}px;border-radius:6px}
     figcaption{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
     figcaption span{color:#777;font-variant-numeric:tabular-nums}
   </style></head><body><h1>${title}</h1><main>${cells}</main></body></html>`;
@@ -133,7 +137,7 @@ async function main() {
         const beat = n + at;
         const name = `beat-${String(n).padStart(2, '0')}${at ? `-${at}` : ''}.png`;
         await shoot(page, beat * info.BEAT, path.join(dir, name));
-        frames.push({ src: `${WEB}out/qa/${name}`, label: barBeat(beat), sub: `${(beat * info.BEAT).toFixed(2)}s` });
+        frames.push({ src: `${WEB}${OUT_WEB}/qa/${name}`, label: barBeat(beat), sub: `${(beat * info.BEAT).toFixed(2)}s` });
       }
       const sheet = path.join(dir, `contact${at ? `-${at}` : ''}.png`);
       await contactSheet(browser, base, frames, sheet, `One frame per beat${at ? ` (+${at} beat)` : ''} · ${info.BPM.toFixed(2)} BPM`);
