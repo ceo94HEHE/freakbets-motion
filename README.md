@@ -5,11 +5,11 @@ A 14-second loop at 1440×1440: one shape that becomes a button, a loader, a che
 ## Pipeline
 
 ```sh
-python3 beats.py ../song.mp3        # beat grid, downbeat, 7-bar window, key → beats.json
+python3 beats.py song.mp3           # beat grid, downbeat, 7-bar window, key → beats.json
 node render.mjs beats               # one frame per beat + contact sheet → out/qa/
 node render.mjs beats --at 0.4      # same, 0.4 beat later (the landed states)
 node render.mjs full                # 4 subframes per 60 fps frame → out/sub/
-python3 audio.py --song ../song.mp3 # UI sounds on their cues + the song window → out/audio.wav
+python3 audio.py --song song.mp3    # UI sounds on their cues + the song window → out/audio.wav
 ./build.sh                          # tmix motion blur + mux → out/ui-morph.mp4
 ```
 
