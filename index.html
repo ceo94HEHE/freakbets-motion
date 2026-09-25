@@ -238,8 +238,9 @@ const mix = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u);
 // r = response (s), d = damping fraction. Closed-form, so any value is a pure function of time.
 const SP = {
   shape:   { r: 0.40, d: 0.82 },
-  color:   { r: 0.30, d: 1 },
-  quick:   { r: 0.17, d: 1 },
+  color:   { r: 0.18, d: 1 },
+  hover:   { r: 0.30, d: 1 },
+  quick:   { r: 0.15, d: 1 },
   camPos:  { r: 0.58, d: 1 },
   camZoom: { r: 0.74, d: 1 },
   enter:   { r: 0.36, d: 0.92 },
@@ -392,8 +393,8 @@ const shapeT = track([
   [23, R5(G.search)], [24, R5(G.pal4)], [25, R5(G.pal1)], [26, R5(G.toast)], [27, R5(G.button)],
 ]);
 const colorT = track([
-  [0, INK_HI], [1, INK], [4.1, ORANGE, SP.flood], [5, INK, SP.quick], [17, ORANGE, SP.quick], [18, INK, SP.quick],
-  [23, WHITE], [26, INK],
+  [0, INK_HI, SP.hover], [1, INK], [4.1, ORANGE, SP.flood], [5, INK, SP.quick], [17, ORANGE, SP.quick], [18, INK, SP.quick],
+  [23, WHITE, SP.quick], [26, INK, SP.quick],
 ], SP.color);
 
 function camOf(g, zmax = 4.2) {
@@ -485,17 +486,17 @@ const row2Y = track([[24, ROW_Y[2]], [25, ROW_Y[0]]]);
 
 // content in and out. Each exit finishes before the next state's content starts to arrive.
 const V = {
-  button: vis(27.12, 1), arrow: track([[0, 4, SP.snap], [1, 0, SP.snap]]),
+  button: vis(27.08, 1), arrow: track([[0, 4, SP.snap], [1, 0, SP.snap]]),
   arc: vis(1.12, 4.6), check: vis(4.08, 5, SP.now),
   island: vis(5.1, 7), art: vis(5.08, 12),
-  ptext: vis(7.28, 12), trackg: vis(7.4, 12), controls: vis(7.56, 12), playPop: track([[7.62, 1, SP.pop], [12.6, 0, SP.now]]),
-  spk: vis(7.34, 16), pill: vis(7.4, 23), knob: vis(7.4, 12),
+  ptext: vis(7.2, 12), trackg: vis(7.28, 12), controls: vis(7.38, 12), playPop: track([[7.44, 1, SP.pop], [12.6, 0, SP.now]]),
+  spk: vis(7.24, 16), pill: vis(7.28, 23), knob: vis(7.28, 12),
   tabs: vis(18.1, 23),
   chead: vis(20.16, 23), chart: vis(20.2, 23), tip: vis(21.3, 22.5), chip: vis(20.3, 26),
   search: vis(23.1, 26), ph: vis(23.14, 24), c1: vis(24, 26, SP.char), c2: vis(25, 26, SP.char),
   divider: vis(24, 26), hl: vis(24.05, 26),
   rows: [vis(24.02, 25), vis(24.06, 25), vis(24.1, 26), vis(24.14, 25)],
-  toast: vis(26.1, 27),
+  toast: vis(26.08, 27),
 };
 
 // UI sounds, for audio.py (seconds; each sound's measured peak lands on its time)
