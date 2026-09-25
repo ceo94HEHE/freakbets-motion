@@ -13,6 +13,17 @@ python3 audio.py --song song.mp3    # UI sounds on their cues + the song window 
 ./build.sh                          # tmix motion blur + mux → out/ui-morph.mp4
 ```
 
+### Other pieces
+
+`rtp-channel/` is a 1:1 (1080×1080) loop for the RTP 🇮🇹 Telegram channel. It uses the same engine, moving through Telegram's UI into a slot feature moment and back to a join button. The symbols are original, and "18+ · Gioca responsabilmente" stays on screen. Every tool takes `--dir`:
+
+```sh
+node render.mjs beats --dir rtp-channel
+node render.mjs full --dir rtp-channel
+python3 audio.py --dir rtp-channel
+./build.sh rtp-channel               # → rtp-channel/out/rtp-channel.mp4
+```
+
 Without a song, `audio.py` writes only the UI sounds, and everything runs on an exact 120 BPM grid. `track.json` (`{"title", "artist", "duration"}`) sets the credit shown in the island and the player.
 
 Needs Node 22 with Playwright's Chromium, Python 3 with numpy (Pillow for the diagnostic plot), and ffmpeg. `python3 beats.py --selftest` checks the beat tracker on a synthetic drum loop.

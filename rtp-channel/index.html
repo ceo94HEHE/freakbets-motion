@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>RTP Channel</title>
+<!--
+  1:1 social loop for the RTP 🇮🇹 Telegram channel. 28 beats, 1080×1080.
+  One shape moves through Telegram's UI into a slot feature moment and back to a join button.
+  Same engine as the UI morph: every style is computed from time inside seek(t).
+  Symbols are original. No amounts, no strategies; "18+ · Gioca responsabilmente" stays on screen.
+-->
+<style>
+  @font-face {
+    font-family: "Geist";
+    src: url("../fonts/Geist-Variable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: block;
+  }
+  :root { --bg: #0e1621; --blue: #2aabee; --link: #6ab3f3; --sub: #7f91a4; --time: #6d7f8f; --gold: #ffc83d; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); overflow: hidden; }
+  #frame {
+    position: relative; width: 1080px; height: 1080px; overflow: hidden; background: var(--bg); transform-origin: 0 0;
+    font-family: "Geist", "Noto Color Emoji", sans-serif; font-synthesis: none;
+    -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+  }
+  #world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+  #shape { position: absolute; overflow: hidden; }
+  #shadow { position: absolute; }
+  .a { position: absolute; left: 0; top: 0; }
+  .grp { visibility: hidden; }
+  .emo { font-family: "Noto Color Emoji", sans-serif; }
+  svg.ic { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+
+  /* logo: an original mark, no face */
+  #logo { width: 128px; height: 128px; border-radius: 64px; background: var(--blue); transform-origin: 0 0; }
+  #logo .w { position: absolute; left: 0; top: 30px; width: 128px; text-align: center; color: #fff; font-size: 44px; line-height: 50px; font-weight: 850; letter-spacing: -0.02em; }
+  #logo .flag { position: absolute; left: 40px; top: 86px; width: 48px; height: 8px; border-radius: 4px; overflow: hidden; display: flex; }
+  #logo .flag i { flex: 1; }
+  #ring { width: 156px; height: 156px; border-radius: 78px; border: 5px solid var(--blue); }
+
+  #gHead { width: 360px; }
+  #gHead .t { color: #fff; font-size: 32px; line-height: 38px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; }
+  #gHead .s { color: var(--sub); font-size: 23px; line-height: 28px; font-weight: 450; white-space: nowrap; height: 28px; }
+
+  .bub { width: 492px; }
+  .bub .n { position: absolute; left: 0; top: 0; color: var(--link); font-size: 22px; line-height: 26px; font-weight: 600; white-space: nowrap; }
+  .bub .m { position: absolute; left: 0; top: 36px; color: #fff; font-size: 30px; line-height: 36px; font-weight: 500; white-space: nowrap; height: 36px; }
+  .bub .tm { position: absolute; right: 0; top: 104px; color: var(--time); font-size: 16px; line-height: 18px; font-weight: 500; }
+  .dots { position: absolute; left: 2px; top: 50px; display: flex; gap: 7px; }
+  .dots i { display: block; width: 10px; height: 10px; border-radius: 5px; background: var(--sub); }
+  .chip { width: 84px; height: 52px; border-radius: 26px; background: rgba(106,179,243,0.16); display: flex; align-items: center; justify-content: center; font-size: 30px; }
+
+  #gSlot { width: 344px; height: 344px; }
+  #gridClip { width: 380px; height: 376px; overflow: hidden; }
+  #payline { position: absolute; left: 0; top: 124px; width: 344px; height: 96px; background: rgba(255,255,255,0.045); }
+  .sym { width: 84px; height: 84px; }
+  .sym svg { width: 100%; height: 100%; overflow: visible; display: block; }
+  .glow { width: 96px; height: 96px; border-radius: 48px; border: 4px solid var(--gold); }
+  #ante { width: 368px; height: 368px; border-radius: 184px; border: 6px solid var(--gold); }
+  #bonus { width: 600px; text-align: center; color: var(--gold); font-size: 76px; line-height: 90px; font-weight: 900; letter-spacing: 0.01em;
+           -webkit-text-stroke: 10px #0b1118; paint-order: stroke fill; }
+
+  #gCard { width: 480px; height: 520px; }
+  #gCard .lab { position: absolute; left: 34px; top: 22px; color: var(--sub); font-size: 19px; line-height: 22px; font-weight: 700; letter-spacing: 0.14em; }
+  #gCard .cnt { position: absolute; left: 32px; top: 44px; color: #fff; font-size: 58px; line-height: 62px; font-weight: 800; letter-spacing: -0.02em; }
+  #mult { width: 136px; height: 62px; border-radius: 31px; border: 3px solid var(--gold); display: flex; align-items: center; justify-content: center;
+          color: var(--gold); font-size: 32px; font-weight: 800; letter-spacing: -0.01em; }
+  #gBanner { width: 540px; height: 176px; line-height: 176px; text-align: center; color: #2a1800; font-size: 104px; font-weight: 900; letter-spacing: -0.02em; }
+
+  #gButton { width: 440px; height: 104px; line-height: 104px; text-align: center; color: #fff; font-size: 30px; font-weight: 650; letter-spacing: -0.005em; }
+  #hint { width: 600px; text-align: center; color: #9fb0c2; font-size: 26px; line-height: 32px; font-weight: 500; }
+  #gToast { width: 330px; height: 88px; display: flex; align-items: center; justify-content: center; gap: 14px; color: #fff; font-size: 25px; font-weight: 600; }
+  #gToast .ok { width: 36px; height: 36px; border-radius: 18px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; }
+
+  #touch { position: absolute; left: 0; top: 0; width: 64px; height: 64px; border-radius: 32px; background: rgba(255,255,255,0.26); border: 2px solid rgba(255,255,255,0.7); visibility: hidden; }
+  #footer { position: absolute; left: 0; bottom: 28px; width: 1080px; text-align: center; color: rgba(255,255,255,0.58); font-size: 30px; line-height: 36px; font-weight: 500; letter-spacing: 0.01em; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <symbol id="s-cherry" viewBox="0 0 100 100">
+        <path d="M36 52C40 34 52 22 68 16M66 56C62 42 63 28 68 16" fill="none" stroke="#3ccb7f" stroke-width="6" stroke-linecap="round"/>
+        <path d="M68 16c10-4 20 0 24 8-10 4-20 2-24-8Z" fill="#3ccb7f"/>
+        <circle cx="34" cy="68" r="17" fill="#ff4d6d"/><circle cx="66" cy="72" r="17" fill="#ff4d6d"/>
+        <circle cx="28" cy="62" r="5" fill="#ff9aac"/><circle cx="60" cy="66" r="5" fill="#ff9aac"/>
+      </symbol>
+      <symbol id="s-bell" viewBox="0 0 100 100">
+        <circle cx="50" cy="14" r="7" fill="#e0a21f"/>
+        <path d="M50 16c-20 0-27 17-27 36v14L13 78h74L77 66V52c0-19-7-36-27-36Z" fill="#ffc83d"/>
+        <path d="M34 34c3-6 8-9 14-10" fill="none" stroke="#fff2b8" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="50" cy="86" r="8" fill="#e0a21f"/>
+      </symbol>
+      <symbol id="s-gem" viewBox="0 0 100 100">
+        <path d="M24 16h52l18 24-44 50L6 40Z" fill="#3dd6f5"/>
+        <path d="M24 16h52l18 24H6Z" fill="#8fecfb"/>
+        <path d="M6 40h88L50 90Z" fill="#1fb4d8"/>
+        <path d="M34 40h32L50 90Z" fill="#3dd6f5"/>
+      </symbol>
+      <symbol id="s-seven" viewBox="0 0 100 100">
+        <text x="53" y="88" text-anchor="middle" font-family="Geist" font-weight="900" font-size="96" fill="#b8323c">7</text>
+        <text x="50" y="85" text-anchor="middle" font-family="Geist" font-weight="900" font-size="96" fill="#ff5a5f">7</text>
+      </symbol>
+      <symbol id="s-scatter" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="44" fill="#7b5cff"/>
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#ffc83d" stroke-width="5"/>
+        <path d="m50 20 8.8 18 19.8 2.9-14.3 14 3.4 19.7L50 65.3l-17.7 9.3 3.4-19.7-14.3-14 19.8-2.9Z" fill="#ffc83d"/>
+      </symbol>
+      <symbol id="s-orb" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="#ffc83d"/>
+        <ellipse cx="36" cy="30" rx="15" ry="9" fill="rgba(255,255,255,0.45)"/>
+        <text x="50" y="62" text-anchor="middle" font-family="Geist" font-weight="900" font-size="34" fill="#3a2600">×25</text>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div id="world">
+    <div id="shadow" class="a"></div>
+    <div id="ring" class="a grp"></div>
+    <div id="ante" class="a grp"></div>
+    <div id="shape">
+      <div id="logo" class="a grp"><div class="w">RTP</div><div class="flag"><i style="background:#009246"></i><i style="background:#fff"></i><i style="background:#ce2b37"></i></div></div>
+      <div id="gHead" class="a grp"><div class="t">RTP <span class="emo">🇮🇹</span></div><div class="s" id="headSub"></div></div>
+
+      <div id="gBub1" class="a grp bub"><div class="n">RTP <span class="emo">🇮🇹</span></div><div class="dots" id="dots1"><i></i><i></i><i></i></div><div class="m" id="msg1"></div><div class="tm">12:30</div></div>
+      <div id="r1a" class="a grp chip"><span class="emo">🔥</span></div>
+      <div id="r1b" class="a grp chip"><span class="emo">😱</span></div>
+
+      <div id="gSlot" class="a grp"><div id="payline"></div></div>
+
+      <div id="gCard" class="a grp"><div class="lab">GIRI GRATIS</div><div class="cnt" id="cnt">10</div></div>
+      <div id="gridClip" class="a grp"></div>
+      <div id="mult" class="a grp">×1</div>
+
+      <div id="gBanner" class="a grp">MEGA!</div>
+
+      <div id="gBub2" class="a grp bub"><div class="n">RTP <span class="emo">🇮🇹</span></div><div class="m" id="msg2"></div><div class="tm">12:31</div></div>
+      <div id="r2a" class="a grp chip"><span class="emo">🔥</span></div>
+      <div id="r2b" class="a grp chip"><span class="emo">😱</span></div>
+      <div id="r2c" class="a grp chip"><span class="emo">👏</span></div>
+
+      <div id="gButton" class="a grp">Unisciti al canale</div>
+      <div id="gToast" class="a grp"><div class="ok"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" style="stroke-width:3"><path d="M5 12.5 9.8 17.2 19 7.4"/></svg></div><span>Iscritto al canale</span></div>
+    </div>
+    <div id="bonus" class="a grp">BONUS!</div>
+    <div id="hint" class="a grp">Tocca il pulsante qui sotto</div>
+  </div>
+  <div id="touch"></div>
+  <div id="footer">18+ · Gioca responsabilmente</div>
+</div>
+
+<script>
+'use strict';
+// ─── Timing ─────────────────────────────────────────────────────────────────
+const SIZE = 1080, HALF = SIZE / 2;
+const GRID = window.__GRID__ || {};
+const BPM = GRID.bpm || 120;
+const BEAT = 60 / BPM;
+const NB = 28;
+const T = NB * BEAT;
+const bt = n => n * BEAT;
+const wrap = x => { x %= T; return x < 0 ? x + T : x; };
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, u) => a + (b - a) * u;
+const mix = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u);
+
+// ─── Springs (closed form) ──────────────────────────────────────────────────
+const SP = {
+  shape: { r: 0.40, d: 0.80 }, color: { r: 0.18, d: 1 }, camPos: { r: 0.55, d: 1 }, camZoom: { r: 0.70, d: 1 },
+  enter: { r: 0.34, d: 0.9 }, exit: { r: 0.13, d: 1 }, snap: { r: 0.24, d: 0.8 }, pop: { r: 0.30, d: 0.62 },
+  drop: { r: 0.30, d: 0.66 }, fall: { r: 0.42, d: 1 }, press: { r: 0.09, d: 1 }, now: { r: 0 },
+};
+function stepResp(tau, sp) {
+  if (tau <= 0) return 0;
+  if (!(sp.r > 0)) return 1;
+  const w = 2 * Math.PI / sp.r, z = sp.d;
+  if (z < 1) { const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * tau) * (Math.cos(wd * tau) + (z * w / wd) * Math.sin(wd * tau)); }
+  return 1 - Math.exp(-w * tau) * (1 + w * tau);
+}
+function freeResp(tau, x0, v0, sp) {
+  const w = 2 * Math.PI / sp.r, z = sp.d;
+  if (z < 1) { const wd = w * Math.sqrt(1 - z * z); return Math.exp(-z * w * tau) * (x0 * Math.cos(wd * tau) + ((v0 + z * w * x0) / wd) * Math.sin(wd * tau)); }
+  return Math.exp(-w * tau) * (x0 + (v0 + w * x0) * tau);
+}
+class Track {                       // sum of one spring per target change; cyclic keys → seamless loop
+  constructor(keys, sp) {
+    this.scalar = !Array.isArray(keys[0][1]);
+    const k = keys.map(([n, v, s]) => ({ t: wrap(bt(n)), v: this.scalar ? [v] : v, sp: s || sp }));
+    k.sort((a, b) => a.t - b.t);
+    k.forEach((key, i) => { const prev = k[(i - 1 + k.length) % k.length].v; key.d = key.v.map((x, j) => x - prev[j]); });
+    this.k = k;
+  }
+  at(t) {
+    t = wrap(t);
+    let cur = this.k[this.k.length - 1];
+    for (const key of this.k) { if (key.t <= t) cur = key; else break; }
+    const out = cur.v.slice();
+    for (const key of this.k) {
+      const tau = wrap(t - key.t);
+      if (tau > 4) continue;
+      const r = 1 - stepResp(tau, key.sp);
+      if (r) for (let j = 0; j < out.length; j++) out[j] -= key.d[j] * r;
+    }
+    return this.scalar ? out[0] : out;
+  }
+}
+const track = (keys, sp = SP.shape) => new Track(keys, sp);
+const vis = (inAt, outAt, spIn = SP.enter, spOut = SP.exit) => new Track([[inAt, 1, spIn], [outAt, 0, spOut]]);
+const impulse = (at, amp, sp = SP.pop) => new Track([[at, amp, sp], [at + 0.5, 0, { r: 0.5, d: 1 }]]);
+
+// ─── Palette + geometry (world px, origin = frame centre) ──────────────────
+const BLUE = [42, 171, 238], HEAD = [23, 33, 43], BUB = [24, 37, 51], WIN = [11, 17, 24], CARD = [18, 27, 38], GOLD = [255, 200, 61];
+const rgb = (c, a = 1) => `rgba(${c.map(v => Math.round(clamp(v, 0, 255))).join(',')},${clamp(a).toFixed(3)})`;
+const G = {
+  avatar:  { x: 0, y: 0,  w: 128, h: 128, r: 64, z: 3.0, c: BLUE },
+  header:  { x: 0, y: 0,  w: 480, h: 108, r: 54, z: 1.8, c: HEAD },
+  bub:     { x: 0, y: 0,  w: 540, h: 176, r: 30, z: 1.6, c: BUB },
+  bubR:    { x: 0, y: 43, w: 540, h: 262, r: 30, z: 1.6, c: BUB },   // grows down when reactions arrive
+  slot:    { x: 0, y: 0,  w: 344, h: 344, r: 172, z: 2.0, c: WIN },
+  card:    { x: 0, y: 0,  w: 480, h: 520, r: 40, z: 1.45, c: CARD },
+  banner:  { x: 0, y: 0,  w: 540, h: 176, r: 88, z: 1.4, c: GOLD },
+  button:  { x: 0, y: 0,  w: 440, h: 104, r: 52, z: 1.8, c: BLUE },
+  toast:   { x: 0, y: 0,  w: 330, h: 88,  r: 44, z: 2.1, c: HEAD },
+};
+const STATES = [[27, 'avatar'], [2, 'header'], [4, 'bub'], [6, 'bubR'], [8, 'slot'], [13, 'card'], [19, 'banner'],
+  [20, 'bub'], [21, 'bubR'], [24, 'button'], [26, 'toast']];
+const shapeT = track(STATES.map(([n, k]) => [n, [G[k].x, G[k].y, G[k].w, G[k].h, G[k].r]]));
+const colorT = track(STATES.filter(([, k], i, a) => i === 0 || G[k].c !== G[a[i - 1][1]].c).map(([n, k]) => [n, G[k].c]), SP.color);
+const camT = track(STATES.map(([n, k]) => [n, [G[k].x, G[k].y + (k === 'button' ? 22 : 0)]]), SP.camPos);
+const zoomT = track(STATES.map(([n, k]) => [n, Math.log(G[k].z)]), SP.camZoom);
+const punch = [impulse(12, 0.06), impulse(19, 0.07)];
+
+// ─── Timeline (beats) ───────────────────────────────────────────────────────
+// 1 avatar · pulse · header · subtitle   2 bubble · message · 🔥 · 😱   3 tap → slot · reel 1 · reel 2 · anticipation
+// 4 BONUS · free spins · spin · tumble   5 orb lands · orb → ×25 · win · MEGA   6 bubble · 🔥 · 😱 · 👏
+// 7 join button · tap · subscribed · back to the avatar
+const V = {
+  logo: vis(27.1, 4), ring: vis(27.3, 2), head: vis(2.12, 4),
+  bub1: vis(4.1, 8), r1a: vis(6, 8, SP.pop), r1b: vis(7, 8, SP.pop), dots1: vis(4.15, 5, SP.enter, { r: 0.08, d: 1 }),
+  slot: vis(8.12, 13), ante: vis(11, 12.6), bonus: vis(12, 13, SP.pop),
+  card: vis(13.1, 19), mult: vis(13.2, 19),
+  banner: vis(19.1, 20, SP.pop),
+  bub2: vis(20.1, 24), r2a: vis(21, 24, SP.pop), r2b: vis(22, 24, SP.pop), r2c: vis(23, 24, SP.pop),
+  button: vis(24.1, 26), hint: vis(24.3, 26), toast: vis(26.1, 27),
+  touch: track([[7.6, 1, SP.enter], [8.35, 0, SP.exit], [24.6, 1, SP.enter], [25.4, 0, SP.exit]]),
+};
+const logoT = track([[27, [0, 0, 128]], [2, [-186, 0, 72]]]);
+const ringPulse = [impulse(0, 1, SP.snap), impulse(1, 1, SP.snap)];
+const pressT = track([[8, 0.78, SP.press], [8.14, 1, SP.press], [25, 0.78, SP.press], [25.14, 1, SP.press]]);
+const buttonDip = impulse(25, 1, { r: 0.12, d: 1 });
+const TAPS = [[7.6, 8.4, 130, -4], [24.6, 25.4, 70, 10]];
+
+const SFX = [
+  [0, 'pulse'], [1, 'pulse'], [2, 'tap'], [3, 'type'], [4, 'pop'], [5, 'type'], [6, 'pop'], [7, 'pop'],
+  [8, 'tap'], [9, 'reel'], [9, 'scatter1'], [10, 'reel'], [10, 'scatter2'], [11, 'tick'], [11.5, 'tick'],
+  [12, 'reel'], [12, 'scatter3'], [12, 'bonus'], [13, 'drop'], [14, 'drop'], [15, 'burst'], [16, 'drop'], [16, 'orb'],
+  [17, 'orb'], [18, 'tick'], [19, 'mega'], [20, 'pop'], [21, 'pop'], [22, 'pop'], [23, 'pop'], [24, 'tap'],
+  [25, 'click'], [26, 'success'], [27, 'tap'],
+].map(([n, type]) => ({ t: bt(n), beat: n, type }));
+
+// ─── Reels: a closed-form spin, then a spring that lands the scatter on the beat ──
+const STRIPS = [
+  ['cherry', 'bell', 'gem', 'seven', 'scatter', 'cherry', 'gem', 'bell', 'seven', 'gem'],
+  ['gem', 'seven', 'cherry', 'scatter', 'bell', 'gem', 'cherry', 'seven', 'bell', 'cherry'],
+  ['bell', 'cherry', 'seven', 'gem', 'cherry', 'bell', 'scatter', 'seven', 'gem', 'bell'],
+];
+const SYM_H = 96, REEL_X = [-104, 0, 104];
+const REEL = { v: 12, ramp: 0.08, t0: bt(8.2), stops: [bt(9), bt(10), bt(12)], sp: { r: 0.34, d: 0.74 }, lead: 0.85, p0: [], pstar: [] };
+const travel = dt => REEL.v * (dt - REEL.ramp * (1 - Math.exp(-dt / REEL.ramp)));
+STRIPS.forEach((strip, i) => {
+  const D = Math.round(travel(REEL.stops[i] - REEL.t0) + REEL.lead);
+  const p0 = ((strip.indexOf('scatter') - D) % 10 + 10) % 10;
+  REEL.p0[i] = p0; REEL.pstar[i] = p0 + D;
+});
+function reelPos(i, t) {
+  const ts = REEL.stops[i];
+  if (t <= REEL.t0 || t > bt(14)) return t > bt(14) ? REEL.pstar[i] : REEL.p0[i];
+  if (t <= ts) return REEL.p0[i] + travel(t - REEL.t0);
+  const x0 = REEL.p0[i] + travel(ts - REEL.t0) - REEL.pstar[i];
+  const v0 = REEL.v * (1 - Math.exp(-(ts - REEL.t0) / REEL.ramp));
+  return REEL.pstar[i] + freeResp(t - ts, x0, v0, REEL.sp);
+}
+
+// ─── Cascade: pieces that drop in, fall out or pop ─────────────────────────
+const CELL = 124, GRID_Y = [-80, 44, 168];
+const cellXY = (c, r) => [(c - 1) * CELL, GRID_Y[r]];
+const PIECES = [];
+function grid(rows, enter, exit, mode = 'fade', slideAt = null) {
+  rows.forEach((row, r) => row.forEach((sym, c) => { if (sym) PIECES.push({ sym, c, r, enter: enter + 0.05 * c + 0.03 * (2 - r), exit, mode, slideAt }); }));
+}
+grid([['bell', 'gem', 'cherry'], ['seven', 'cherry', 'gem'], ['gem', 'bell', 'seven']], 13.02, 14, 'fall');
+grid([['cherry', 'bell', 'seven'], [null, null, null], [null, null, null]], 14.04, 19, 'fade', 15.5);
+grid([[null, null, null], [null, null, null], ['bell', 'seven', 'cherry']], 14.04, 19);
+grid([[null, null, null], ['gem', 'gem', 'gem'], [null, null, null]], 14.04, 15, 'pop');
+grid([['seven', null, 'bell'], [null, null, null], [null, null, null]], 15.6, 19);
+grid([[null, 'gem', null], [null, null, null], [null, null, null]], 17.45, 19);   // refills the orb's cell
+const ORB = { sym: 'orb', c: 1, r: 0, enter: 15.62, exit: 17, mode: 'fly' };
+PIECES.push(ORB);
+const winPulse = impulse(18, 1, SP.pop);
+PIECES.forEach(p => {
+  if (p.slideAt) p.slide = track([[p.slideAt, 1, SP.drop], [p.enter - 0.6, 0, SP.now]]);
+  p.drop = track([[p.enter, 1, SP.drop], [p.enter - 0.6 < 0 ? p.enter + 26 : p.enter - 0.6, 0, SP.now]]);
+  p.gone = p.mode === 'pop' ? track([[p.exit, 1.18, SP.snap], [p.exit + 0.3, 0, SP.snap], [p.enter - 0.6, 1, SP.now]])
+    : track([[p.exit, 1, p.mode === 'fall' ? SP.fall : SP.exit], [p.enter - 0.6, 0, SP.now]]);
+});
+const flyT = track([[17, 1, { r: 0.42, d: 0.9 }], [15, 0, SP.now]]);
+const multVal = t => (wrap(t) >= bt(17.34) && wrap(t) < bt(19.5)) ? '×25' : '×1';
+const multPop = impulse(17.34, 1, SP.pop);
+
+// ─── DOM ───────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const el = {};
+['world', 'shadow', 'shape', 'gridClip', 'ring', 'ante', 'logo', 'gHead', 'headSub', 'gBub1', 'dots1', 'msg1', 'r1a', 'r1b', 'gSlot', 'gCard', 'cnt',
+ 'mult', 'gBanner', 'gBub2', 'msg2', 'r2a', 'r2b', 'r2c', 'gButton', 'gToast', 'bonus', 'hint', 'touch'].forEach(id => { el[id] = $(id); });
+const NS = 'http://www.w3.org/2000/svg';
+function symbolEl(parent) {
+  const d = document.createElement('div'); d.className = 'a sym';
+  const s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 100 100');
+  const u = document.createElementNS(NS, 'use'); s.appendChild(u); d.appendChild(s); parent.appendChild(d);
+  d.use = u; d.cur = ''; return d;
+}
+const setSym = (d, name) => { if (d.cur !== name) { d.use.setAttribute('href', `#s-${name}`); d.cur = name; } };
+const reelEls = REEL_X.map(() => [0, 1, 2, 3, 4].map(() => symbolEl(el.gSlot)));
+const glowEls = REEL_X.map(() => { const g = document.createElement('div'); g.className = 'a glow'; el.gSlot.insertBefore(g, el.gSlot.firstChild.nextSibling); return g; });
+PIECES.forEach(p => { p.el = symbolEl(p.mode === 'fly' ? el.shape : el.gridClip); setSym(p.el, p.sym); p.el.classList.add('grp'); });
+el.shape.appendChild(el.mult);                                   // keep the multiplier above the pieces
+
+const seg = new Intl.Segmenter('it', { granularity: 'grapheme' });
+const typed = (text, t, at, dur) => { const g = [...seg.segment(text)].map(s => s.segment); return g.slice(0, Math.round(g.length * clamp((t - bt(at)) / dur))).join(''); };
+
+// ─── Render helpers ─────────────────────────────────────────────────────────
+let SL = 0, ST = 0;
+const px = v => `${Math.round(v * 1000) / 1000}px`;
+function put(node, wx, wy) { node.style.left = px(wx - SL); node.style.top = px(wy - ST); }
+function fx(node, v, blur = 6, scale = 0.94) {
+  const o = clamp(v);
+  if (o < 0.002) { node.style.visibility = 'hidden'; return false; }
+  node.style.visibility = 'inherit';
+  node.style.opacity = o.toFixed(4);
+  const b = (1 - o) * blur;
+  node.style.filter = b > 0.04 ? `blur(${b.toFixed(2)}px)` : 'none';
+  node.style.transform = `scale(${(scale + (1 - scale) * clamp(v, 0, 1.25)).toFixed(4)})`;
+  return true;
+}
+function place(node, v, x, y, w, h, blur, scale) { if (fx(node, v, blur, scale)) put(node, x - w / 2, y - h / 2); }
+// for elements that live in #world (outside the shape's clip)
+function placeW(node, v, x, y, w, h, blur, scale) { if (fx(node, v, blur, scale)) { node.style.left = px(x - w / 2); node.style.top = px(y - h / 2); } }
+
+// ─── seek ──────────────────────────────────────────────────────────────────
+function seek(tIn) {
+  const t = wrap(tIn);
+
+  // camera (with a small punch on BONUS and MEGA)
+  const [camX, camY] = camT.at(t);
+  const z = Math.exp(zoomT.at(t) + punch.reduce((s, p) => s + p.at(t), 0));
+  el.world.style.transform = `matrix(${z.toFixed(5)},0,0,${z.toFixed(5)},${(HALF - z * camX).toFixed(3)},${(HALF - z * camY).toFixed(3)})`;
+
+  // the shape
+  let [x, y, w, h, r] = shapeT.at(t);
+  const dip = 1 - 0.04 * buttonDip.at(t);
+  w *= dip; h *= dip;
+  r = Math.min(r, w / 2, h / 2);
+  SL = x - w / 2; ST = y - h / 2;
+  const S = el.shape.style;
+  S.left = px(SL); S.top = px(ST); S.width = px(w); S.height = px(h); S.borderRadius = px(r);
+  S.backgroundColor = rgb(colorT.at(t));
+  const D = el.shadow.style;
+  D.left = px(SL + 12); D.top = px(ST + 18); D.width = px(w - 24); D.height = px(h); D.borderRadius = px(r);
+  D.filter = 'blur(18px)'; D.background = 'rgba(0,0,0,0.45)';
+
+  // avatar logo and its ring
+  if (fx(el.logo, V.logo.at(t), 4, 1)) {
+    const [lx, ly, ls] = logoT.at(t);
+    put(el.logo, lx - ls / 2, ly - ls / 2);
+    el.logo.style.transform = `scale(${(ls / 128).toFixed(4)})`;
+  }
+  const pulse = ringPulse.reduce((s, p) => s + p.at(t), 0);
+  if (fx(el.ring, V.ring.at(t) * (0.55 + 0.45 * clamp(pulse)), 0, 1)) {
+    el.ring.style.left = px(-78); el.ring.style.top = px(-78);
+    el.ring.style.transform = `scale(${(1 + 0.1 * pulse).toFixed(4)})`;
+  }
+
+  // header
+  if (fx(el.gHead, V.head.at(t))) { put(el.gHead, -134, -34); el.headSub.textContent = typed('Slot, bonus e momenti epici', t, 3, 0.36); }
+
+  // bubble 1: typing dots, message, reactions
+  if (fx(el.gBub1, V.bub1.at(t))) {
+    put(el.gBub1, -246, -68);
+    const dv = V.dots1.at(t);
+    el.dots1.style.opacity = clamp(dv).toFixed(3);
+    [...el.dots1.children].forEach((d, i) => { d.style.transform = `translateY(${(-5 * Math.max(0, Math.sin((t * 9) - i * 0.9))).toFixed(2)}px)`; });
+    el.msg1.textContent = typed('Il momento di oggi 👇', t, 5, 0.3);
+  }
+  place(el.r1a, V.r1a.at(t), -246 + 42, 138, 84, 52, 2, 0.4);
+  place(el.r1b, V.r1b.at(t), -152 + 42, 138, 84, 52, 2, 0.4);
+
+  // slot window: three reels, the scatters land on the beat
+  if (fx(el.gSlot, V.slot.at(t), 5, 1)) {
+    put(el.gSlot, -172, -172);
+    REEL_X.forEach((rx, i) => {
+      const p = reelPos(i, t), base = Math.floor(p);
+      const vel = Math.abs(reelPos(i, t + 0.004) - reelPos(i, t - 0.004)) / 0.008;
+      const stretch = 1 + 0.32 * clamp(vel / REEL.v);
+      reelEls[i].forEach((d, k) => {
+        const idx = base + k - 2;
+        setSym(d, STRIPS[i][((idx % 10) + 10) % 10]);
+        d.style.left = px(172 + rx - 42);
+        d.style.top = px(172 + (p - idx) * SYM_H - 42);
+        d.style.transform = `scaleY(${stretch.toFixed(3)})`;
+        const off = Math.abs(p - idx);
+        d.style.opacity = ((1 - 0.25 * clamp(vel / REEL.v)) * (1 - 0.6 * clamp(off - 0.45, 0, 1))).toFixed(3);
+      });
+      const landed = t >= REEL.stops[i] + 0.04 && t < bt(13.2);
+      const g = glowEls[i];
+      g.style.visibility = landed ? 'inherit' : 'hidden';
+      if (landed) {
+        const since = t - REEL.stops[i];
+        g.style.left = px(172 + rx - 48); g.style.top = px(172 - 48);
+        g.style.opacity = (0.5 + 0.5 * Math.exp(-since / 0.25)).toFixed(3);
+        g.style.transform = `scale(${(1 + 0.12 * Math.exp(-since / 0.2)).toFixed(3)})`;
+      }
+    });
+  }
+  const av = V.ante.at(t);
+  if (fx(el.ante, av * (0.5 + 0.5 * Math.abs(Math.cos((t - bt(11)) * Math.PI / (BEAT / 2)))), 0, 1)) { el.ante.style.left = px(-184); el.ante.style.top = px(-184); }
+  placeW(el.bonus, V.bonus.at(t), 0, -8, 600, 90, 4, 0.5);
+
+  // feature card: free spins counter, cascade, multiplier orb
+  if (fx(el.gCard, V.card.at(t), 5, 1)) { put(el.gCard, -240, -260); el.cnt.textContent = t >= bt(14) && t < bt(19.5) ? '9' : '10'; }
+  if (fx(el.mult, V.mult.at(t), 4, 0.8)) {
+    put(el.mult, 150 - 68, -196 - 31);
+    el.mult.textContent = multVal(t);
+    const mp = multPop.at(t);
+    el.mult.style.transform = `scale(${(1 + 0.16 * mp).toFixed(4)})`;
+    el.mult.style.background = rgb(GOLD, 0.18 * clamp(mp));
+  }
+  const cardOn = V.card.at(t), wp = winPulse.at(t), nb = t / BEAT;
+  const GC = { x: -190, y: -144 };                                 // grid clip, world top-left
+  if (fx(el.gridClip, cardOn, 0, 1)) put(el.gridClip, GC.x, GC.y);
+  PIECES.forEach(p => {
+    const d = p.drop.at(t), gone = p.gone.at(t);
+    let v = cardOn * (d > 0.001 ? 1 : 0) * (nb >= p.enter - 0.01 && nb < 19.6 ? 1 : 0);
+    let [cx, cy] = cellXY(p.c, p.r), sc = 1;
+    cy -= (1 - d) * 520;
+    if (p.slide) cy += p.slide.at(t) * CELL;
+    if (p.mode === 'fall') { cy += gone * 620; v *= 1 - clamp(gone * 1.4); }
+    else if (p.mode === 'pop') { sc = gone; v *= clamp(gone * 3); }
+    else if (p.mode === 'fly') {
+      const f = clamp(flyT.at(t), 0, 1.05);
+      const [ex, ey] = [150, -196];
+      const mx = (cx + ex) / 2 + 60, my = Math.min(cy, ey) - 120;
+      cx = (1 - f) * (1 - f) * cx + 2 * (1 - f) * f * mx + f * f * ex;
+      cy = (1 - f) * (1 - f) * cy + 2 * (1 - f) * f * my + f * f * ey;
+      sc = 1 - 0.45 * f;
+      v *= t >= bt(17.36) && t < bt(19.5) ? 0 : 1;
+    } else { v *= 1 - gone; }
+    if (p.mode !== 'fall' && p.mode !== 'fly') sc *= 1 + 0.09 * wp;
+    const node = p.el;
+    if (v < 0.002) { node.style.visibility = 'hidden'; return; }
+    node.style.visibility = 'inherit';
+    node.style.opacity = clamp(v).toFixed(3);
+    node.style.filter = 'none';
+    if (p.mode === 'fly') {
+      put(node, cx - 42, cy - 42);
+      // while it drops, hide whatever is above the grid (it isn't inside the grid clip, because it flies out later)
+      const hide = flyT.at(t) > 0.001 ? 0 : Math.max(0, GC.y - (cy - 42));
+      node.style.clipPath = hide > 0 ? `inset(${Math.min(84, hide).toFixed(2)}px 0 0 0)` : 'none';
+    }
+    else { node.style.left = px(cx - 42 - GC.x); node.style.top = px(cy - 42 - GC.y); }
+    node.style.transform = `scale(${sc.toFixed(4)})`;
+  });
+
+  // MEGA banner
+  place(el.gBanner, V.banner.at(t), 0, 0, 540, 176, 5, 0.7);
+
+  // bubble 2
+  if (fx(el.gBub2, V.bub2.at(t))) { put(el.gBub2, -246, -68); el.msg2.textContent = typed('Il meglio, sul canale 👇', t, 20.2, 0.3); }
+  place(el.r2a, V.r2a.at(t), -246 + 42, 138, 84, 52, 2, 0.4);
+  place(el.r2b, V.r2b.at(t), -152 + 42, 138, 84, 52, 2, 0.4);
+  place(el.r2c, V.r2c.at(t), -58 + 42, 138, 84, 52, 2, 0.4);
+
+  // join button → subscribed toast
+  place(el.gButton, V.button.at(t), 0, 0, 440, 104, 5, 0.94);
+  placeW(el.hint, V.hint.at(t), 0, 92, 600, 28, 4, 1);
+  place(el.gToast, V.toast.at(t), 0, 0, 330, 88, 5, 0.94);
+
+  // touch indicator (screen space)
+  const tv = V.touch.at(t), tap = TAPS.find(([a, b]) => { const n = t / BEAT; return n >= a - 0.2 && n <= b + 0.3; });
+  if (tv > 0.002 && tap) {
+    const sx = HALF + z * (tap[2] - camX), sy = HALF + z * (tap[3] - camY);
+    el.touch.style.visibility = 'visible';
+    el.touch.style.opacity = clamp(tv).toFixed(3);
+    el.touch.style.transform = `translate(${(sx - 32).toFixed(2)}px,${(sy - 32).toFixed(2)}px) scale(${pressT.at(t).toFixed(4)})`;
+  } else el.touch.style.visibility = 'hidden';
+}
+
+// ─── Boot ──────────────────────────────────────────────────────────────────
+window.MORPH = { seek, T, BEAT, BPM, NB, SFX, SIZE };
+window.seek = seek;
+document.fonts.ready.then(() => {
+  seek(0);
+  window.__ready = true;
+  if (window.__RENDER__) return;
+  const frame = document.getElementById('frame');
+  const fit = () => { frame.style.transform = `scale(${Math.min(innerWidth, innerHeight) / SIZE})`; };
+  fit(); addEventListener('resize', fit);
+  const q = new URLSearchParams(location.search);
+  if (q.has('t')) { seek(parseFloat(q.get('t'))); return; }
+  if (q.has('beat')) { seek(bt(parseFloat(q.get('beat')))); return; }
+  let t0 = performance.now(), paused = false, held = 0;
+  addEventListener('click', () => { paused = !paused; if (paused) held = (performance.now() - t0) / 1000; else t0 = performance.now() - held * 1000; });
+  const loop = now => { if (!paused) seek((now - t0) / 1000); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>

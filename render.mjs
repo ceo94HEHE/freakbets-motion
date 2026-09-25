@@ -1,11 +1,12 @@
-// Renders index.html frame by frame with Playwright.
+// Renders a piece's index.html frame by frame with Playwright.
 //
 //   node render.mjs beats [--at 0.5]   one frame per beat (optionally offset in beats) + contact sheet → out/qa/
 //   node render.mjs times 4.5 5.25     specific seconds → out/qa/t-4.500.png
 //   node render.mjs full [--workers 4] 4 subframes per 60 fps frame → out/sub/00000.png …
 //
-// Reads beats.json (measured tempo) and track.json (title, artist, duration) when present,
-// and writes out/timeline.json (loop length + UI sound cues) for audio.py.
+// --dir rtp-channel renders another piece (default: the UI morph at the repo root). The page sets
+// its own frame size (MORPH.SIZE). Reads beats.json (measured tempo) and track.json (title, artist,
+// duration) from the piece's folder, and writes out/timeline.json (loop + UI sound cues) for audio.py.
 import http from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -14,10 +15,18 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const OUT = path.join(HERE, 'out');
+const ARGS = process.argv.slice(2);
+const flag = (name, def) => {
+  const i = ARGS.indexOf(`--${name}`);
+  return i >= 0 ? ARGS[i + 1] : def;
+};
+const DIR = flag('dir', '.');
+const PIECE = path.join(HERE, DIR);
+const OUT = path.join(PIECE, 'out');
+const WEB = DIR === '.' ? '' : `${DIR.replace(/\/+$/, '')}/`;   // piece path as served
 const FPS = 60;
 const SUB = 4;
-const SIZE = 1440;
+let SIZE = 1440;
 
 async function loadPlaywright() {
   try {
@@ -47,7 +56,7 @@ function serve() {
 }
 
 async function readJSON(name) {
-  const file = path.join(HERE, name);
+  const file = path.join(PIECE, name);
   return existsSync(file) ? JSON.parse(await readFile(file, 'utf8')) : null;
 }
 
@@ -68,6 +77,8 @@ async function openPage(browser, url, cfg) {
   }, cfg);
   await page.goto(url);
   await page.waitForFunction(() => window.__ready === true);
+  SIZE = await page.evaluate(() => window.MORPH.SIZE || 1440);
+  await page.setViewportSize({ width: SIZE, height: SIZE });
   return page;
 }
 
@@ -100,11 +111,7 @@ async function contactSheet(browser, base, frames, file, title) {
 }
 
 async function main() {
-  const [mode = 'beats', ...rest] = process.argv.slice(2);
-  const flag = (name, def) => {
-    const i = rest.indexOf(`--${name}`);
-    return i >= 0 ? rest[i + 1] : def;
-  };
+  const [mode = 'beats', ...rest] = ARGS;
   const { chromium } = await loadPlaywright();
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -112,8 +119,8 @@ async function main() {
   const browser = await chromium.launch();
 
   try {
-    const page = await openPage(browser, `${base}/index.html`, cfg);
-    const info = await page.evaluate(() => ({ T: window.MORPH.T, BEAT: window.MORPH.BEAT, BPM: window.MORPH.BPM, SFX: window.MORPH.SFX }));
+    const page = await openPage(browser, `${base}/${WEB}index.html`, cfg);
+    const info = await page.evaluate(() => ({ T: window.MORPH.T, BEAT: window.MORPH.BEAT, BPM: window.MORPH.BPM, NB: window.MORPH.NB, SFX: window.MORPH.SFX }));
     await mkdir(OUT, { recursive: true });
     await writeFile(path.join(OUT, 'timeline.json'), JSON.stringify({ ...info, fps: FPS, frames: Math.round(info.T * FPS) }, null, 2));
 
@@ -122,11 +129,11 @@ async function main() {
       const dir = path.join(OUT, 'qa');
       await mkdir(dir, { recursive: true });
       const frames = [];
-      for (let n = 0; n < 28; n++) {
+      for (let n = 0; n < info.NB; n++) {
         const beat = n + at;
         const name = `beat-${String(n).padStart(2, '0')}${at ? `-${at}` : ''}.png`;
         await shoot(page, beat * info.BEAT, path.join(dir, name));
-        frames.push({ src: `out/qa/${name}`, label: barBeat(beat), sub: `${(beat * info.BEAT).toFixed(2)}s` });
+        frames.push({ src: `${WEB}out/qa/${name}`, label: barBeat(beat), sub: `${(beat * info.BEAT).toFixed(2)}s` });
       }
       const sheet = path.join(dir, `contact${at ? `-${at}` : ''}.png`);
       await contactSheet(browser, base, frames, sheet, `One frame per beat${at ? ` (+${at} beat)` : ''} · ${info.BPM.toFixed(2)} BPM`);
@@ -154,7 +161,7 @@ async function main() {
       await Promise.all(
         Array.from({ length: workers }, async (_, w) => {
           const own = await chromium.launch();
-          const p = await openPage(own, `${base}/index.html`, cfg);
+          const p = await openPage(own, `${base}/${WEB}index.html`, cfg);
           for (let i = from + w * chunk; i < Math.min(total, from + (w + 1) * chunk); i++) {
             await shoot(p, timeOf(i), path.join(dir, `${String(i).padStart(5, '0')}.png`));
             if (++done % 200 === 0) {

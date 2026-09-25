@@ -2,7 +2,8 @@
 """UI sounds and the music bed for the loop.
 
     python3 audio.py                     UI sounds only (draft)
-    python3 audio.py --song ../song.mp3  UI sounds over the song, cut on the grid in beats.json
+    python3 audio.py --song song.mp3     UI sounds over the song, cut on the grid in beats.json
+    python3 audio.py --dir rtp-channel   another piece (reads/writes that folder)
 
 Reads out/timeline.json (written by render.mjs) and writes out/audio.wav.
 Every UI sound is synthesised here. Its peak is measured and it is placed so that peak lands
@@ -18,7 +19,8 @@ from pathlib import Path
 import numpy as np
 
 SR = 48000
-HERE = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent
+HERE = ROOT
 OUT = HERE / "out"
 rng = np.random.default_rng(7)
 
@@ -100,6 +102,26 @@ def build_sounds(root_hz):
     chime = layer((tone(root_hz, 0.6, 0.20, 0.002) * 0.6 + tone(root_hz * 2, 0.6, 0.08, 0.002) * 0.12, 0),
                   (tone(root_hz * 1.5, 0.6, 0.16, 0.002) * 0.45, 0.055))
     s["success"] = norm(layer((chime, 0), (click() * 0.25, 0)), 0.46)
+
+    # slot and chat sounds (rtp-channel)
+    def bell(f, dur=0.7, tau=0.22, amp=1.0):
+        return (tone(f, dur, tau, 0.002) + 0.35 * tone(f * 2.76, dur, tau * 0.45, 0.002) + 0.15 * tone(f * 5.4, dur, tau * 0.2, 0.002)) * amp
+    s["tap"] = norm(layer((band(noise(0.02, 0.0015), 2500, 9000), 0), (tone(1900, 0.02, 0.004) * 0.3, 0)), 0.32)
+    s["pulse"] = norm(layer((tone(root_hz / 2, 0.25, 0.07, 0.004), 0), (tone(root_hz, 0.2, 0.04, 0.004) * 0.3, 0)), 0.26)
+    s["type"] = norm(layer(*[(band(noise(0.012, 0.0012), 3000, 9000) * (0.7 + 0.3 * (i % 2)), i * 0.055) for i in range(5)]), 0.18)
+    pop = np.sin(2 * np.pi * np.cumsum(np.linspace(500, 1300, int(0.03 * SR))) / SR) * decay(int(0.03 * SR), 0.008)
+    s["pop"] = norm(layer((pop, 0), (band(noise(0.01, 0.001), 2000, 8000) * 0.3, 0)), 0.38)
+    s["reel"] = norm(layer((sweep(190, 80, 0.12, 0.03), 0), (band(noise(0.02, 0.002), 800, 4000) * 0.5, 0)), 0.5)
+    for i, ratio in enumerate((1.0, 1.25, 1.5), 1):
+        s[f"scatter{i}"] = norm(bell(root_hz * ratio), 0.42)
+    s["tick"] = norm(layer((tone(2600, 0.015, 0.003), 0), (band(noise(0.008, 0.001), 3000, 10000) * 0.4, 0)), 0.2)
+    s["bonus"] = norm(layer((bell(root_hz) + bell(root_hz * 1.25) + bell(root_hz * 1.5) + bell(root_hz * 2, amp=0.6), 0),
+                            (band(noise(0.25, 0.08), 4000, 12000) * 0.25, 0.01)), 0.58)
+    s["drop"] = norm(layer((band(noise(0.06, 0.012), 150, 1200), 0), (sweep(120, 60, 0.08, 0.02) * 0.6, 0)), 0.34)
+    s["burst"] = norm(layer((band(noise(0.05, 0.01), 2000, 9000), 0), (bell(root_hz * 3, 0.3, 0.06, 0.4), 0)), 0.44)
+    s["orb"] = norm(layer((bell(root_hz * 2, 0.5, 0.12), 0), (bell(root_hz * 3, 0.4, 0.08, 0.5), 0.04), (band(noise(0.2, 0.05), 5000, 12000) * 0.2, 0)), 0.4)
+    s["mega"] = norm(layer((sweep(130, 38, 0.6, 0.18), 0), (bell(root_hz) + bell(root_hz * 1.5) + bell(root_hz * 2), 0.005),
+                           (band(noise(0.3, 0.07), 300, 6000) * 0.4, 0)), 0.66)
     return {k: declick(v.copy()) for k, v in s.items()}
 
 
@@ -133,12 +155,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--song", type=Path)
     ap.add_argument("--sfx-gain", type=float, default=1.0)
+    ap.add_argument("--dir", default=".")
     args = ap.parse_args()
+    global HERE, OUT
+    HERE = ROOT / args.dir
+    OUT = HERE / "out"
 
     tl = json.loads((OUT / "timeline.json").read_text())
     n = int(round(tl["frames"] / tl["fps"] * SR))
     beats = json.loads((HERE / "beats.json").read_text()) if (HERE / "beats.json").exists() else {}
-    sounds = build_sounds(beats.get("chime_hz", 880.0))
+    sounds = build_sounds(beats.get("chime_hz", 660.0 if args.dir != "." else 880.0))
 
     ui = np.zeros(n)
     report = []
@@ -169,7 +195,7 @@ def main():
         w.writeframes(pcm.tobytes())
     for beat, kind, pk in report:
         print(f"beat {beat:>5}: {kind:<8} peak at {pk:5.2f} ms into the sound")
-    print(f"wrote out/audio.wav · {n / SR:.3f}s")
+    print(f"wrote {(OUT / 'audio.wav').relative_to(ROOT)} · {n / SR:.3f}s")
 
 
 if __name__ == "__main__":
