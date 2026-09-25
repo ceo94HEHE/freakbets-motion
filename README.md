@@ -32,6 +32,14 @@ python3 audio.py --dir rtp-channel --out out-story
 ./build.sh rtp-channel out-story     # → rtp-channel/out-story/rtp-channel-story.mp4
 ```
 
+`rtp-hype/` is the aggressive cut: 16 beats (8 s), hook on frame 0 (the third scatter slams), BONUS, a cascade, orbs stacking the multiplier to ×135, MEGA, a kinetic headline and a hard join CTA, with shakes, flashes and a sunburst. Stories is the default; `--format square` gives 1:1.
+
+```sh
+node render.mjs full --dir rtp-hype --format story    # and --format square
+python3 audio.py --dir rtp-hype --out out-story
+./build.sh rtp-hype out-story                          # → rtp-hype/out-story/rtp-hype-story.mp4
+```
+
 Without a song, `audio.py` writes only the UI sounds, and everything runs on an exact 120 BPM grid. `track.json` (`{"title", "artist", "duration"}`) sets the credit shown in the island and the player.
 
 Needs Node 22 with Playwright's Chromium, Python 3 with numpy (Pillow for the diagnostic plot), and ffmpeg. `python3 beats.py --selftest` checks the beat tracker on a synthetic drum loop.

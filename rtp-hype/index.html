@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>RTP Hype</title>
+<!--
+  The aggressive cut for the RTP 🇮🇹 channel: 16 beats (8 s), hook on the first frame.
+  Stories 9:16 by default, ?format=square for 1:1. Every style is computed from time inside seek(t).
+  Energy, not claims: no amounts, no strategies, no scarcity; "18+ · Gioca responsabilmente" stays on.
+-->
+<style>
+  @font-face { font-family: "Geist"; src: url("../fonts/Geist-Variable.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+  :root { --gold: #ffc83d; --mag: #ff2e88; --blue: #2aabee; --lav: #b9a6ff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #0b0518; overflow: hidden; }
+  #frame { position: relative; width: 1080px; height: 1920px; overflow: hidden; transform-origin: 0 0;
+           background: radial-gradient(circle at 50% 50%, #2e1066 0%, #170838 45%, #0b0518 100%);
+           font-family: "Geist", "Noto Color Emoji", sans-serif; font-synthesis: none; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
+  #world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+  .a { position: absolute; left: 0; top: 0; }
+  .grp { visibility: hidden; }
+  .emo { font-family: "Noto Color Emoji", sans-serif; }
+  .ctr { display: flex; align-items: center; justify-content: center; text-align: center; }
+
+  #rays { width: 2400px; height: 2400px; border-radius: 50%;
+          background: repeating-conic-gradient(from 0deg, rgba(255,200,61,0.16) 0deg 9deg, rgba(255,200,61,0) 9deg 22.5deg);
+          -webkit-mask-image: radial-gradient(circle, #000 0%, #000 30%, transparent 70%); mask-image: radial-gradient(circle, #000 0%, #000 30%, transparent 70%); }
+
+  #reels { width: 920px; height: 400px; border-radius: 56px; background: #0b0518; overflow: hidden;
+           box-shadow: inset 0 0 0 7px var(--gold), 0 30px 80px rgba(0,0,0,0.55); }
+  #payline { position: absolute; left: 0; top: 80px; width: 920px; height: 240px; background: rgba(255,255,255,0.05); }
+  .sym { width: 200px; height: 200px; }
+  .sym svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .glow { width: 236px; height: 236px; border-radius: 118px; box-shadow: 0 0 0 8px var(--gold); }
+
+  .slam { font-weight: 900; letter-spacing: -0.02em; white-space: nowrap; -webkit-text-stroke: 16px #1a0838; paint-order: stroke fill; }
+  #bonus { width: 1200px; height: 260px; font-size: 230px; line-height: 260px; color: var(--gold); }
+  #count { width: 1000px; }
+  #count .n { font-size: 330px; line-height: 330px; color: #fff; }
+  #count .l { font-size: 96px; line-height: 110px; color: var(--gold); }
+
+  #card { width: 860px; height: 1000px; border-radius: 60px; background: #1a0b3b; overflow: hidden;
+          box-shadow: inset 0 0 0 5px rgba(255,200,61,0.55), 0 30px 80px rgba(0,0,0,0.55); }
+  #card .lab { position: absolute; left: 50px; top: 50px; color: var(--lav); font-size: 34px; line-height: 40px; font-weight: 750; letter-spacing: 0.14em; }
+  #card .cnt { position: absolute; left: 46px; top: 88px; color: #fff; font-size: 110px; line-height: 116px; font-weight: 900; letter-spacing: -0.02em; }
+  #total { width: 480px; height: 170px; justify-content: flex-end; font-size: 150px; line-height: 170px; color: var(--gold); font-weight: 900; letter-spacing: -0.03em; }
+  #gridClip { width: 780px; height: 720px; overflow: hidden; }
+  .orb { width: 200px; height: 200px; border-radius: 100px; background: var(--gold); color: #3a2600; font-size: 64px; font-weight: 900;
+         box-shadow: inset -14px -18px 0 rgba(0,0,0,0.12), 0 0 0 6px rgba(255,255,255,0.25); }
+
+  #mega { width: 980px; height: 320px; border-radius: 160px; background: var(--gold); color: #2a1800; font-size: 230px; line-height: 320px; font-weight: 900; letter-spacing: -0.03em;
+          box-shadow: 0 30px 90px rgba(255,200,61,0.35); }
+  .word { width: 1400px; height: 220px; font-size: 176px; line-height: 220px; }
+
+  #head { width: 900px; height: 210px; border-radius: 105px; background: #17212b; box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+  #head .logo { position: absolute; left: 26px; top: 26px; width: 158px; height: 158px; border-radius: 79px; background: var(--blue); }
+  #head .logo .w { position: absolute; left: 0; top: 36px; width: 158px; text-align: center; color: #fff; font-size: 54px; line-height: 60px; font-weight: 850; letter-spacing: -0.02em; }
+  .flag { position: absolute; display: flex; border-radius: 5px; overflow: hidden; }
+  .flag i { flex: 1; }
+  #head .t { position: absolute; left: 216px; top: 40px; color: #fff; font-size: 60px; line-height: 70px; font-weight: 750; letter-spacing: -0.01em; }
+  #head .s { position: absolute; left: 216px; top: 116px; color: #7f91a4; font-size: 44px; line-height: 52px; font-weight: 500; }
+  #btn { width: 840px; height: 190px; border-radius: 95px; background: var(--blue); color: #fff; font-size: 74px; font-weight: 800; letter-spacing: -0.01em;
+         box-shadow: 0 30px 80px rgba(42,171,238,0.35); }
+  #toast { width: 700px; height: 160px; border-radius: 80px; background: #17212b; color: #fff; font-size: 58px; font-weight: 700; gap: 26px; }
+  #toast .ok { width: 76px; height: 76px; border-radius: 38px; background: var(--blue); }
+
+  #flash { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; background: #fff; opacity: 0; pointer-events: none; }
+  #touch { position: absolute; left: 0; top: 0; width: 120px; height: 120px; border-radius: 60px; background: rgba(255,255,255,0.28); border: 4px solid rgba(255,255,255,0.8); visibility: hidden; }
+  #pill { position: absolute; left: 0; top: 290px; width: 1080px; display: flex; justify-content: center; }
+  #pill .p { display: flex; align-items: center; gap: 16px; padding: 12px 30px 12px 14px; border-radius: 40px; background: rgba(23,33,43,0.85); color: #fff; font-size: 34px; font-weight: 650; }
+  #pill .m { width: 56px; height: 56px; border-radius: 28px; background: var(--blue); color: #fff; font-size: 19px; font-weight: 850; display: flex; align-items: center; justify-content: center; }
+  #footer { position: absolute; left: 0; bottom: 390px; width: 1080px; text-align: center; color: rgba(255,255,255,0.62); font-size: 32px; line-height: 38px; font-weight: 500; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <svg width="0" height="0" style="position:absolute"><defs>
+      <symbol id="s-cherry" viewBox="0 0 100 100">
+        <path d="M36 52C40 34 52 22 68 16M66 56C62 42 63 28 68 16" fill="none" stroke="#3ccb7f" stroke-width="6" stroke-linecap="round"/>
+        <path d="M68 16c10-4 20 0 24 8-10 4-20 2-24-8Z" fill="#3ccb7f"/>
+        <circle cx="34" cy="68" r="17" fill="#ff4d6d"/><circle cx="66" cy="72" r="17" fill="#ff4d6d"/>
+        <circle cx="28" cy="62" r="5" fill="#ff9aac"/><circle cx="60" cy="66" r="5" fill="#ff9aac"/>
+      </symbol>
+      <symbol id="s-bell" viewBox="0 0 100 100">
+        <circle cx="50" cy="14" r="7" fill="#e0a21f"/>
+        <path d="M50 16c-20 0-27 17-27 36v14L13 78h74L77 66V52c0-19-7-36-27-36Z" fill="#ffc83d"/>
+        <path d="M34 34c3-6 8-9 14-10" fill="none" stroke="#fff2b8" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="50" cy="86" r="8" fill="#e0a21f"/>
+      </symbol>
+      <symbol id="s-gem" viewBox="0 0 100 100">
+        <path d="M24 16h52l18 24-44 50L6 40Z" fill="#3dd6f5"/>
+        <path d="M24 16h52l18 24H6Z" fill="#8fecfb"/>
+        <path d="M6 40h88L50 90Z" fill="#1fb4d8"/>
+        <path d="M34 40h32L50 90Z" fill="#3dd6f5"/>
+      </symbol>
+      <symbol id="s-seven" viewBox="0 0 100 100">
+        <text x="53" y="88" text-anchor="middle" font-family="Geist" font-weight="900" font-size="96" fill="#b8323c">7</text>
+        <text x="50" y="85" text-anchor="middle" font-family="Geist" font-weight="900" font-size="96" fill="#ff5a5f">7</text>
+      </symbol>
+      <symbol id="s-scatter" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="44" fill="#7b5cff"/>
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#ffc83d" stroke-width="5"/>
+        <path d="m50 20 8.8 18 19.8 2.9-14.3 14 3.4 19.7L50 65.3l-17.7 9.3 3.4-19.7-14.3-14 19.8-2.9Z" fill="#ffc83d"/>
+      </symbol>
+  </defs></svg>
+
+  <div id="world">
+    <div id="rays" class="a grp"></div>
+    <div id="reels" class="a grp"><div id="payline"></div></div>
+    <div id="bonus" class="a grp ctr slam">BONUS!</div>
+    <div id="count" class="a grp slam"><div class="n ctr">10</div><div class="l ctr">GIRI GRATIS</div></div>
+    <div id="card" class="a grp"><div class="lab">GIRI GRATIS</div><div class="cnt" id="cnt">10</div><div id="total" class="a ctr">×1</div><div id="gridClip" class="a"></div></div>
+    <div id="mega" class="a grp ctr">MEGA!</div>
+    <div id="w1" class="a grp ctr slam word" style="color:#fff">I MOMENTI</div>
+    <div id="w2" class="a grp ctr slam word" style="color:var(--gold)">PIÙ EPICI</div>
+    <div id="w3" class="a grp ctr slam word" style="color:var(--mag)">DELLE SLOT</div>
+    <div id="head" class="a grp">
+      <div class="logo"><div class="w">RTP</div><div class="flag" style="left:52px;top:106px;width:54px;height:10px"><i style="background:#009246"></i><i style="background:#fff"></i><i style="background:#ce2b37"></i></div></div>
+      <div class="t">RTP <span class="emo">🇮🇹</span></div><div class="s" id="subs">10.586 iscritti</div>
+    </div>
+    <div id="btn" class="a grp ctr">Unisciti ora <span class="emo">&nbsp;👇</span></div>
+    <div id="toast" class="a grp ctr"><div class="ok ctr"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 9.8 17.2 19 7.4"/></svg></div><span>Iscritto al canale</span></div>
+  </div>
+  <div id="flash"></div>
+  <div id="touch"></div>
+  <div id="pill"><div class="p"><div class="m">RTP</div>RTP <span class="emo">🇮🇹</span> · Telegram</div></div>
+  <div id="footer">18+ · Gioca responsabilmente</div>
+</div>
+
+<script>
+'use strict';
+const FORMAT = window.__FORMAT__ || new URLSearchParams(location.search).get('format') || 'story';
+const STORY = FORMAT !== 'square';
+const W = 1080, H = STORY ? 1920 : 1080, SIZE = W, HX = W / 2, HY = STORY ? 930 : 560;
+const GRID = window.__GRID__ || {};
+const BPM = GRID.bpm || 120, BEAT = 60 / BPM, NB = 16, T = NB * BEAT;
+const bt = n => n * BEAT;
+const wrap = x => { x %= T; return x < 0 ? x + T : x; };
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+
+// ─── Springs (closed form) ──────────────────────────────────────────────────
+const SP = { enter: { r: 0.30, d: 0.86 }, exit: { r: 0.11, d: 1 }, slam: { r: 0.26, d: 0.62 }, snap: { r: 0.22, d: 0.8 },
+  drop: { r: 0.26, d: 0.64 }, cam: { r: 0.5, d: 1 }, press: { r: 0.08, d: 1 }, now: { r: 0 } };
+function stepResp(tau, sp) {
+  if (tau <= 0) return 0;
+  if (!(sp.r > 0)) return 1;
+  const w = 2 * Math.PI / sp.r, z = sp.d;
+  if (z < 1) { const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * tau) * (Math.cos(wd * tau) + (z * w / wd) * Math.sin(wd * tau)); }
+  return 1 - Math.exp(-w * tau) * (1 + w * tau);
+}
+function freeResp(tau, x0, v0, sp) {
+  const w = 2 * Math.PI / sp.r, z = sp.d;
+  if (z < 1) { const wd = w * Math.sqrt(1 - z * z); return Math.exp(-z * w * tau) * (x0 * Math.cos(wd * tau) + ((v0 + z * w * x0) / wd) * Math.sin(wd * tau)); }
+  return Math.exp(-w * tau) * (x0 + (v0 + w * x0) * tau);
+}
+class Track {
+  constructor(keys, sp) {
+    this.scalar = !Array.isArray(keys[0][1]);
+    const k = keys.map(([n, v, s]) => ({ t: wrap(bt(n)), v: this.scalar ? [v] : v, sp: s || sp }));
+    k.sort((a, b) => a.t - b.t);
+    k.forEach((key, i) => { const prev = k[(i - 1 + k.length) % k.length].v; key.d = key.v.map((x, j) => x - prev[j]); });
+    this.k = k;
+  }
+  at(t) {
+    t = wrap(t);
+    let cur = this.k[this.k.length - 1];
+    for (const key of this.k) { if (key.t <= t) cur = key; else break; }
+    const out = cur.v.slice();
+    for (const key of this.k) {
+      const tau = wrap(t - key.t);
+      if (tau > 3) continue;
+      const r = 1 - stepResp(tau, key.sp);
+      if (r) for (let j = 0; j < out.length; j++) out[j] -= key.d[j] * r;
+    }
+    return this.scalar ? out[0] : out;
+  }
+}
+const track = (keys, sp = SP.snap) => new Track(keys, sp);
+const vis = (inAt, outAt, spIn = SP.enter, spOut = SP.exit) => new Track([[inAt, 1, spIn], [outAt, 0, spOut]]);
+// a decaying hit that is a pure function of time (flash, shake, punch)
+const since = (t, n) => wrap(t - bt(n));
+const hit = (t, beats, tau) => beats.reduce((s, n) => s + Math.exp(-since(t, n) / tau), 0);
+
+// ─── Timeline (16 beats) ────────────────────────────────────────────────────
+// 1: scatter slams · BONUS! · 10 GIRI GRATIS · cascade   2: gems pop · ×10 · ×25 · ×100 → ×135
+// 3: MEGA! · I MOMENTI · PIÙ EPICI · DELLE SLOT          4: RTP header · Unisciti ora · tap → iscritto · reels spin back in
+const V = {
+  reels: vis(14.8, 1.05, SP.enter), bonus: vis(1, 2, SP.slam), count: vis(2, 3, SP.slam), card: vis(3, 8, SP.enter),
+  mega: vis(8, 9, SP.slam), w1: vis(9, 10, SP.slam), w2: vis(10, 11, SP.slam), w3: vis(11, 12, SP.slam),
+  head: vis(12, 13, SP.enter), btn: vis(13, 14.12, SP.slam), toast: vis(14.15, 14.9, SP.enter),
+  rays: new Track([[0, 0.75, SP.enter], [3, 0, SP.exit], [8, 1, SP.enter], [9.2, 0, SP.exit]]),
+  touch: track([[13.6, 1, SP.enter], [14.4, 0, SP.exit]]),
+};
+const pressT = track([[14, 0.8, SP.press], [14.14, 1, SP.press]]);
+const zoomT = new Track([[3, STORY ? 1 : 0.8, SP.cam], [8, 1, SP.cam]], SP.cam);   // the tall card needs the 1:1 frame to pull back
+const SLAMS = [0, 1, 2, 8, 9, 10, 11, 13];
+const SFX = [
+  [0, 'reel'], [0, 'scatter3'], [1, 'bonus'], [2, 'mega'], [3, 'drop'], [4, 'burst'], [5, 'orb'], [6, 'orb'], [7, 'orb'],
+  [8, 'mega'], [9, 'reel'], [10, 'reel'], [11, 'reel'], [12, 'pop'], [13, 'click'], [14, 'tap'], [14.15, 'success'],
+  [15.33, 'reel'], [15.33, 'scatter1'], [15.67, 'reel'], [15.67, 'scatter2'],
+].map(([n, type]) => ({ t: bt(n), beat: n, type }));
+
+// ─── Reels: spin in at the end of the loop, the third scatter lands on beat 0 (the first frame) ──
+const STRIPS = [
+  ['cherry', 'bell', 'gem', 'seven', 'scatter', 'cherry', 'gem', 'bell', 'seven', 'gem'],
+  ['gem', 'seven', 'cherry', 'scatter', 'bell', 'gem', 'cherry', 'seven', 'bell', 'cherry'],
+  ['bell', 'cherry', 'seven', 'gem', 'cherry', 'bell', 'scatter', 'seven', 'gem', 'bell'],
+];
+const SYM_H = 240, REEL_X = [-300, 0, 300];
+// each stop spring starts a hair before its beat so the scatter is seated on the beat (the third one on frame 0)
+const LAND = [15.333, 15.667, 16];                            // beats where each scatter sits on the payline
+const REEL = { v: 11, ramp: 0.06, t0: bt(14.9), stops: LAND.map(n => bt(n - 0.12)), sp: { r: 0.22, d: 0.74 }, lead: 0.5, p0: [], pstar: [] };
+const travel = dt => REEL.v * (dt - REEL.ramp * (1 - Math.exp(-dt / REEL.ramp)));
+// every reel starts its stop spring exactly `lead` symbols short of a scatter, so all three land alike
+STRIPS.forEach((strip, i) => {
+  const run = travel(REEL.stops[i] - REEL.t0);
+  let pstar = strip.indexOf('scatter');
+  while (pstar < run + REEL.lead + 3) pstar += 10;
+  REEL.pstar[i] = pstar; REEL.p0[i] = pstar - REEL.lead - run;
+});
+function reelPos(i, t) {                        // t unwrapped across the seam: 14.5 → 18 beats
+  const ts = REEL.stops[i];
+  if (t <= REEL.t0) return REEL.p0[i];
+  if (t <= ts) return REEL.p0[i] + travel(t - REEL.t0);
+  const x0 = REEL.p0[i] + travel(ts - REEL.t0) - REEL.pstar[i], v0 = REEL.v * (1 - Math.exp(-(ts - REEL.t0) / REEL.ramp));
+  return REEL.pstar[i] + freeResp(t - ts, x0, v0, REEL.sp);
+}
+
+// ─── Cascade + multiplier orbs ─────────────────────────────────────────────
+const CELL = 240, GX = [-240, 0, 240], GY = [-120, 120, 360];     // world, card centred at (0, 0)
+const PIECES = [];
+function grid(rows, enter, exit, mode = 'fade', slideAt = null) {
+  rows.forEach((row, r) => row.forEach((sym, c) => { if (sym) PIECES.push({ sym, c, r, enter: enter + 0.04 * c + 0.03 * (2 - r), exit, mode, slideAt }); }));
+}
+grid([['cherry', 'bell', 'seven'], [null, null, null], [null, null, null]], 3.0, 8, 'fade', 4.35);
+grid([[null, null, null], ['gem', 'gem', 'gem'], [null, null, null]], 3.0, 4, 'pop');
+grid([[null, null, null], [null, null, null], ['bell', 'seven', 'cherry']], 3.0, 8);
+grid([['gem', 'seven', 'bell'], [null, null, null], [null, null, null]], 4.4, 8);
+const ORBS = [{ n: 5, c: 0, r: 0, label: '×10', total: '×10' }, { n: 6, c: 2, r: 1, label: '×25', total: '×35' }, { n: 7, c: 1, r: 2, label: '×100', total: '×135' }];
+PIECES.forEach(p => {
+  if (p.slideAt) p.slide = track([[p.slideAt, 1, SP.drop], [p.enter - 0.5, 0, SP.now]]);
+  p.drop = track([[p.enter, 1, SP.drop], [p.enter - 0.5, 0, SP.now]]);
+  p.gone = p.mode === 'pop' ? track([[p.exit, 1.2, SP.snap], [p.exit + 0.28, 0, SP.snap], [p.enter - 0.5, 1, SP.now]])
+    : track([[p.exit, 1, SP.exit], [p.enter - 0.5, 0, SP.now]]);
+  // an orb takes over this cell from its beat on
+  const row = p.r + (p.slide ? 1 : 0);                        // where it sits once the tumble has happened
+  const o = ORBS.find(o => o.c === p.c && o.r === row && p.mode !== 'pop' && p.enter < o.n);
+  p.hideAt = o ? o.n - 0.02 : null;
+});
+ORBS.forEach(o => { o.pop = track([[o.n, 1, SP.slam], [o.n - 0.5, 0, SP.now]]); o.fly = track([[o.n + 0.3, 1, { r: 0.3, d: 0.95 }], [o.n - 0.5, 0, SP.now]]); });
+const totalAt = n => { let v = '×1'; ORBS.forEach(o => { if (n >= o.n + 0.52 && n < 8.5) v = o.total; }); return v; };
+const totalPop = t => ORBS.reduce((s, o) => s + (wrap(t) >= bt(o.n + 0.52) ? Math.exp(-since(t, o.n + 0.52) / 0.12) : 0), 0);
+
+// ─── DOM ───────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const el = {};
+['world', 'rays', 'reels', 'bonus', 'count', 'card', 'cnt', 'total', 'gridClip', 'mega', 'w1', 'w2', 'w3', 'head', 'subs', 'btn', 'toast', 'flash', 'touch', 'pill', 'footer']
+  .forEach(id => { el[id] = $(id); });
+const NS = 'http://www.w3.org/2000/svg';
+function symbolEl(parent) {
+  const d = document.createElement('div'); d.className = 'a sym grp';
+  const s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 100 100');
+  const u = document.createElementNS(NS, 'use'); s.appendChild(u); d.appendChild(s); parent.appendChild(d);
+  d.use = u; d.cur = ''; return d;
+}
+const setSym = (d, name) => { if (d.cur !== name) { d.use.setAttribute('href', `#s-${name}`); d.cur = name; } };
+const glows = REEL_X.map(() => { const g = document.createElement('div'); g.className = 'a glow'; el.reels.appendChild(g); return g; });
+const reelEls = REEL_X.map(() => [0, 1, 2, 3].map(() => symbolEl(el.reels)));
+PIECES.forEach(p => { p.el = symbolEl(el.gridClip); setSym(p.el, p.sym); });
+ORBS.forEach(o => { const d = document.createElement('div'); d.className = 'a orb ctr grp'; d.textContent = o.label; el.card.appendChild(d); o.el = d; });
+el.card.appendChild(el.total);
+if (!STORY) {
+  el.frame = $('frame'); el.frame.style.height = `${H}px`;
+  el.pill.style.top = '34px'; el.footer.style.bottom = '26px'; el.flash.style.height = `${H}px`;
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+const px = v => `${Math.round(v * 1000) / 1000}px`;
+function fx(node, v, blur = 8, scale = 0.9, big = 1) {       // big > 1: slam in from larger
+  const o = clamp(v);
+  if (o < 0.002) { node.style.visibility = 'hidden'; return false; }
+  node.style.visibility = 'inherit';
+  node.style.opacity = o.toFixed(4);
+  const b = (1 - o) * blur;
+  node.style.filter = b > 0.05 ? `blur(${b.toFixed(2)}px)` : 'none';
+  const s = big > 1 ? big + (1 - big) * v : scale + (1 - scale) * clamp(v, 0, 1.3);
+  node.style.transform = `scale(${s.toFixed(4)})`;
+  return true;
+}
+function at(node, x, y, w, h) { node.style.left = px(x - w / 2); node.style.top = px(y - h / 2); }
+
+// ─── seek ──────────────────────────────────────────────────────────────────
+function seek(tIn) {
+  const t = wrap(tIn), n = t / BEAT;
+
+  // camera: format scale, punch and shake on the slams
+  const z = zoomT.at(t) * (1 + 0.06 * hit(t, [0, 1, 8], 0.09) + 0.03 * hit(t, [2, 9, 10, 11, 13], 0.08));
+  const shake = SLAMS.reduce((s, k) => { const tau = since(t, k); return s + (tau < 0.5 ? Math.exp(-tau / 0.07) * Math.sin(tau * 90) : 0); }, 0);
+  const sx = 18 * shake, sy = 10 * SLAMS.reduce((s, k) => { const tau = since(t, k); return s + (tau < 0.5 ? Math.exp(-tau / 0.07) * Math.cos(tau * 77) : 0); }, 0);
+  el.world.style.transform = `matrix(${z.toFixed(5)},0,0,${z.toFixed(5)},${(HX + sx).toFixed(3)},${(HY + sy).toFixed(3)})`;
+  el.flash.style.opacity = clamp(0.3 * hit(t, [0], 0.07) + 0.85 * hit(t, [8], 0.08) + 0.25 * hit(t, [1, 13], 0.05)).toFixed(3);
+
+  // rotating sunburst behind BONUS and MEGA
+  if (fx(el.rays, V.rays.at(t), 0, 0.8)) { at(el.rays, 0, 0, 2400, 2400); el.rays.style.transform += ` rotate(${(t * 22).toFixed(2)}deg)`; }
+
+  // reels (wrap the reel phase across the loop seam)
+  if (fx(el.reels, V.reels.at(t), 8, 0.9)) {
+    at(el.reels, 0, 0, 920, 400);
+    const tr = n >= 14 ? t : t + T;
+    REEL_X.forEach((rx, i) => {
+      const p = reelPos(i, tr), base = Math.floor(p);
+      const vel = Math.abs(reelPos(i, tr + 0.004) - reelPos(i, tr - 0.004)) / 0.008;
+      reelEls[i].forEach((d, k) => {
+        const idx = base + k - 1;
+        setSym(d, STRIPS[i][((idx % 10) + 10) % 10]);
+        d.style.visibility = 'inherit';
+        d.style.left = px(460 + rx - 100);
+        d.style.top = px(200 + (p - idx) * SYM_H - 100);
+        d.style.transform = `scaleY(${(1 + 0.35 * clamp(vel / REEL.v)).toFixed(3)})`;
+        d.style.opacity = ((1 - 0.2 * clamp(vel / REEL.v)) * (1 - 0.55 * clamp(Math.abs(p - idx) - 0.45))).toFixed(3);
+      });
+      const landed = tr >= bt(LAND[i]) - 0.01;
+      glows[i].style.visibility = landed ? 'inherit' : 'hidden';
+      if (landed) {
+        const s0 = tr - bt(LAND[i]);
+        at(glows[i], 460 + rx, 200, 236, 236);
+        glows[i].style.transform = `scale(${(1 + 0.18 * Math.exp(-s0 / 0.15)).toFixed(3)})`;
+      }
+    });
+  }
+
+  // BONUS! and the free-spins count slam in from big
+  if (fx(el.bonus, V.bonus.at(t), 10, 1, 1.9)) at(el.bonus, 0, 0, 1200, 260);
+  if (fx(el.count, V.count.at(t), 10, 1, 1.7)) at(el.count, 0, -40, 1000, 440);
+
+  // the card: cascade, then three orbs that stack the multiplier
+  if (fx(el.card, V.card.at(t), 8, 0.92)) {
+    at(el.card, 0, 0, 860, 1000);
+    el.cnt.textContent = n >= 4.35 && n < 8.5 ? '9' : '10';
+    el.total.textContent = totalAt(n);
+    el.total.style.left = px(860 - 50 - 480); el.total.style.top = px(40);
+    el.total.style.transform = `scale(${(1 + 0.22 * clamp(totalPop(t))).toFixed(4)})`;
+    el.total.style.transformOrigin = '100% 50%';
+    const GCX = -390, GCY = -240;               // grid clip top-left (world)
+    el.gridClip.style.left = px(GCX + 430); el.gridClip.style.top = px(GCY + 500);
+    PIECES.forEach(p => {
+      const d = p.drop.at(t), gone = p.gone.at(t);
+      let v = (d > 0.001 ? 1 : 0) * (n >= p.enter - 0.01 && n < 8.6 ? 1 : 0);
+      let x = GX[p.c], y = GY[p.r] - (1 - d) * 760, s = 1;
+      if (p.slide) y += p.slide.at(t) * CELL;
+      if (p.mode === 'pop') { s = gone; v *= clamp(gone * 3); } else v *= 1 - gone;
+      if (p.hideAt && n >= p.hideAt && n < 8.6) v = 0;
+      const node = p.el;
+      if (v < 0.002) { node.style.visibility = 'hidden'; return; }
+      node.style.visibility = 'inherit';
+      node.style.opacity = clamp(v).toFixed(3);
+      node.style.left = px(x - 100 - GCX); node.style.top = px(y - 100 - GCY);
+      node.style.transform = `scale(${s.toFixed(4)})`;
+    });
+    ORBS.forEach(o => {
+      const pop = o.pop.at(t), f = clamp(o.fly.at(t), 0, 1.05);
+      const on = n >= o.n - 0.02 && n < o.n + 0.54;
+      if (!on) { o.el.style.visibility = 'hidden'; return; }
+      const [x0, y0] = [GX[o.c], GY[o.r]], [x1, y1] = [270, -415];
+      const mx = (x0 + x1) / 2 + 120, my = Math.min(y0, y1) - 220;
+      const x = (1 - f) ** 2 * x0 + 2 * (1 - f) * f * mx + f * f * x1, y = (1 - f) ** 2 * y0 + 2 * (1 - f) * f * my + f * f * y1;
+      o.el.style.visibility = 'inherit';
+      o.el.style.left = px(x - 100 + 430); o.el.style.top = px(y - 100 + 500);
+      o.el.style.transform = `scale(${(clamp(pop, 0, 1.3) * (1 - 0.45 * f)).toFixed(4)})`;
+    });
+  }
+
+  // MEGA!, then the headline one word per beat
+  if (fx(el.mega, V.mega.at(t), 10, 1, 1.8)) at(el.mega, 0, 0, 980, 320);
+  if (fx(el.w1, V.w1.at(t), 10, 1, 1.8)) at(el.w1, 0, 0, 1400, 220);
+  if (fx(el.w2, V.w2.at(t), 10, 1, 1.8)) at(el.w2, 0, 0, 1400, 220);
+  if (fx(el.w3, V.w3.at(t), 10, 1, 1.8)) at(el.w3, 0, 0, 1400, 220);
+
+  // CTA: the channel with its real subscriber count, join now, subscribed
+  if (fx(el.head, V.head.at(t), 8, 0.9)) {
+    at(el.head, 0, 0, 900, 210);
+    const r = clamp(since(t, 12) / 0.4);
+    el.subs.textContent = `${Math.round(9200 + (10586 - 9200) * (1 - (1 - r) ** 3)).toLocaleString('it-IT')} iscritti`;
+  }
+  if (fx(el.btn, V.btn.at(t), 10, 1, 1.5)) {
+    at(el.btn, 0, 0, 840, 190);
+    el.btn.style.transform += ` scale(${(1 - 0.05 * hit(t, [14], 0.06)).toFixed(4)})`;
+  }
+  if (fx(el.toast, V.toast.at(t), 8, 0.9)) at(el.toast, 0, 0, 700, 160);
+  const tv = V.touch.at(t);
+  if (tv > 0.002 && n > 13.3 && n < 14.8) {
+    el.touch.style.visibility = 'visible';
+    el.touch.style.opacity = clamp(tv).toFixed(3);
+    el.touch.style.transform = `translate(${(HX + z * 170 - 60).toFixed(2)}px,${(HY + z * 30 - 60).toFixed(2)}px) scale(${pressT.at(t).toFixed(4)})`;
+  } else el.touch.style.visibility = 'hidden';
+}
+
+// ─── Boot ──────────────────────────────────────────────────────────────────
+window.MORPH = { seek, T, BEAT, BPM, NB, SFX, SIZE, W, H, FORMAT };
+window.seek = seek;
+document.fonts.ready.then(() => {
+  seek(0);
+  window.__ready = true;
+  if (window.__RENDER__) return;
+  const frame = $('frame');
+  const fit = () => { frame.style.transform = `scale(${Math.min(innerWidth / W, innerHeight / H)})`; };
+  fit(); addEventListener('resize', fit);
+  const q = new URLSearchParams(location.search);
+  if (q.has('t')) { seek(parseFloat(q.get('t'))); return; }
+  let t0 = performance.now(), paused = false, held = 0;
+  addEventListener('click', () => { paused = !paused; if (paused) held = (performance.now() - t0) / 1000; else t0 = performance.now() - held * 1000; });
+  const loop = now => { if (!paused) seek((now - t0) / 1000); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
